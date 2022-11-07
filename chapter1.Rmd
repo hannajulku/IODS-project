@@ -1,7 +1,10 @@
+--- 
+title: "First week of the course"
+output: html_document
+--- 
 
-# About the project
+# 1: Start me up!
 
-*Write a short description about the course and add a link to your GitHub repository here. This is an R Markdown (.Rmd) file so you should use R Markdown syntax.*
 
 ```{r}
 # This is a so-called "R chunk" where you can write R code.
@@ -9,5 +12,13 @@
 date()
 
 ```
-The text continues here.
+The first week was somewhat heavy for me as I was ill and also a rookie with R. Hopefully things will start running more smoothly when getting more familiar with the language and learning to code on my own. Reading "the R for Health Data Science" and checking the code in RStudio simultaneously did not work too well for me. I felt it broke down the though process, even when the same things are presented in both. I think for me only the reading version would have been enough at this point as it describes the code also. I still get the point of having the RStudio version on the side to see how errors and such look like. 
+
+I find the material useful in getting to know R. For example the plotting part is excellent when learning how to draw nice plots. It also saves a lot of time when there is a material to guide one through the basics rather than starting by googling somewhat randomly to find the basic options. (*Tried* to learn something else by the latter method, not really advisable)
+
+When I was looking for a course to study R, my supervisor recommended this course. My first impression of this course is, that this will be really useful indeed.
+
+## Link to my GitHub repository 
+To visit my repository [click here](https://github.com/hannajulku/IODS-project)
+
 
