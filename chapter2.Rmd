@@ -1,4 +1,4 @@
-# Insert chapter 2 title here
+# 2: Regression and Model Validation
 
 *Describe the work you have done this week and summarize your learning.*
 
@@ -10,4 +10,6 @@
 date()
 ```
 
-Here we go again...
+## Dataset
+This dataset consists of X variables and X observations.
+Variables include averaged? scores for X and demographics as gender and age.
