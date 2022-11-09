@@ -11,5 +11,74 @@ date()
 ```
 
 ## Dataset
-This dataset consists of X variables and X observations.
-Variables include averaged? scores for X and demographics as gender and age.
+First, read the data into R and inspect it.
+
+```{r}
+# access libraries that will be needed
+library(tidyverse)
+
+# let's have a look at the data
+students2014 <- read.csv(file = '\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/exp2data.csv')
+str(students2014)
+head(students2014)
+# if you prefer you may use the following instead or in addition
+# glimpse(students2014)
+````
+
+This dataset consists of 7 variables and 166 observations.
+Here I decribe the variables:
+gender = F for female, M for male
+age = age in years
+attitude = points as mean for attitudes toward statistics
+deep = points as mean for items related with deep approach to studying
+stra = points as mean for items related with strategic approach to studying
+surf = points as mean for items related with surface approach to studying
+points = exam points
+
+
+### Visualize the data
+First, have a look at the data points in relation to points received from the exam and attitudes towards statistics.
+
+```{r}
+# first access the libraries to be needed
+library(ggplot2)
+library(GGally)
+
+# initialize plot with data and aesthetic mapping, plot by gender
+p1 <- ggplot(students2014, aes(x = attitude, y = points, col = gender))
+
+# define the visualization type (points)
+p2 <- p1 + geom_point()
+
+# draw the plot
+p2
+
+#not too informative yet, so let's add regression line and a title
+# add a regression line
+p3 <- p2 + geom_smooth(method = "lm")
+
+# add a main title
+p4 <- p3 + ggtitle("Student's attitude versus exam points")
+
+# draw the plot!
+p4
+
+# draw a scatter plot matrix of the variables in students2014.
+# [-1] excludes the first column (gender)
+pairs(learning2014[-1])
+
+# create a more advanced plot matrix with ggpairs()
+p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+
+# draw the plot
+p
+````
+Visual inspection of the data revealed the following:
+There is about double the amount of females in the data in respect to males. 
+Gender distributions for each variable are quite similar to each other.
+By inspecting the variables attitude, stra, and surf seem to follow normal distribution. Age is strongly skewed to 20-30-year-olds. Variables deep and points seem a little skewed towards higher end.
+#### Statistically significant correlations
+Attitude correlates positively with points. When gender is taken into acocunt correlation is significant for males and females.
+Surf correlates negatively with attitude, deep, and stra. When  gender is taken into account stra is not correlated for males nor females. Attitude and deep are correlated negatively with surf only for male gender.
+
+### Explanatory variables
