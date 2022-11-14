@@ -48,10 +48,13 @@ library(GGally)
   strategic_columns <- select(fulldata, one_of(strategic_questions)) 
     # and create column 'stra' by averaging
   fulldata$stra <- rowMeans(strategic_columns)
+  # rename variables Age and Points
+  rename(fulldata, age = Age)
+  rename(fulldata, points = Points)
 
-# Select  columns to be included in the analysis dataset 
+  # Select  columns to be included in the analysis dataset 
     # choose columns to keep
-  analysisdata <- fulldata[c("gender","Age","attitude", "deep", "stra", "surf", "Points")]
+  analysisdata <- fulldata[c("gender","age","attitude", "deep", "stra", "surf", "points")]
     
 # Exclude observations where points value is 0
     cleaneddata <- analysisdata %>% 
@@ -59,7 +62,14 @@ library(GGally)
     
 # check the structure of cleaned dataset
     str(cleaneddata)
+    head(cleaneddata)
     # 16 observations and 7 variables, as expected by instructions
+#rename columns 2 = age and 7 = points
+    colnames(cleaneddata)[2] <- "age"
+    colnames(cleaneddata)[7] <- "points"
+    # check that column names look as wanted
+    colnames(cleaneddata)
+    # now column names are fine
 
 # set working directory
     setwd("\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project")

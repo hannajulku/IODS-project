@@ -1,10 +1,9 @@
+--- 
+title: "Exercise 2"
+output: html_document
+--- 
+
 # 2: Regression and Model Validation
-
-*Describe the work you have done this week and summarize your learning.*
-
-- Describe your work and results clearly. 
-- Assume the reader has an introductory course level understanding of writing and reading R code as well as statistical methods.
-- Assume the reader has no previous knowledge of your data or the more advanced methods you are using.
 
 ```{r}
 date()
@@ -14,8 +13,10 @@ date()
 First, read the data into R and inspect it.
 
 ```{r}
-# access libraries that will be needed
+# access libraries that will be needed at exercise 2
 library(tidyverse)
+library(ggplot2)
+library(GGally)
 
 # let's have a look at the data
 students2014 <- read.csv(file = '\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/exp2data.csv')
@@ -26,59 +27,129 @@ head(students2014)
 ````
 
 This dataset consists of 7 variables and 166 observations.
-Here I decribe the variables:
+
+
+Variable discriptions:
+
 gender = F for female, M for male
+
 age = age in years
+
 attitude = points as mean for attitudes toward statistics
+
 deep = points as mean for items related with deep approach to studying
+
 stra = points as mean for items related with strategic approach to studying
+
 surf = points as mean for items related with surface approach to studying
+
 points = exam points
 
 
-### Visualize the data
-First, have a look at the data points in relation to points received from the exam and attitudes towards statistics.
+### Data Visualization
+Visualize the data so that gender is distinguished. Use ggpairs to create matrix of plots from the variables in the dataset.
 
 ```{r}
-# first access the libraries to be needed
-library(ggplot2)
-library(GGally)
 
-# initialize plot with data and aesthetic mapping, plot by gender
-p1 <- ggplot(students2014, aes(x = attitude, y = points, col = gender))
-
-# define the visualization type (points)
-p2 <- p1 + geom_point()
-
-# draw the plot
-p2
-
-#not too informative yet, so let's add regression line and a title
-# add a regression line
-p3 <- p2 + geom_smooth(method = "lm")
-
-# add a main title
-p4 <- p3 + ggtitle("Student's attitude versus exam points")
-
-# draw the plot!
-p4
-
-# draw a scatter plot matrix of the variables in students2014.
-# [-1] excludes the first column (gender)
-pairs(learning2014[-1])
-
-# create a more advanced plot matrix with ggpairs()
-p <- ggpairs(learning2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
+# create a plot matrix with ggpairs()
+p <- ggpairs(students2014, mapping = aes(col = gender, alpha = 0.3), lower = list(combo = wrap("facethist", bins = 20)))
 
 # draw the plot
 p
+
+# show summaries for variables in students2014
+summary(students2014)
+
 ````
 Visual inspection of the data revealed the following:
-There is about double the amount of females in the data in respect to males. 
-Gender distributions for each variable are quite similar to each other.
-By inspecting the variables attitude, stra, and surf seem to follow normal distribution. Age is strongly skewed to 20-30-year-olds. Variables deep and points seem a little skewed towards higher end.
-#### Statistically significant correlations
-Attitude correlates positively with points. When gender is taken into acocunt correlation is significant for males and females.
-Surf correlates negatively with attitude, deep, and stra. When  gender is taken into account stra is not correlated for males nor females. Attitude and deep are correlated negatively with surf only for male gender.
 
-### Explanatory variables
+There is about double the amount of females in the data in respect to males. 
+Scatterplot for points with attitudes indicates a linear interaction. Also for deep and stra there seems to be linear interaction. 
+
+Gender distribution for variables age, deep, and points seem similar. For attitude male distribution is more towards higher scores as for females it reminds more of normal distribution. For stra the case is the opposite for attitude distribution: females are having higher score. For surf females have sharp peaking normal distribution where males are leaning towards lower scores. 
+
+**Numerical summaries for variables:**
+
+Following listing will have 1st and 3rd quadrants and median values for stated variable.
+
+age: 21.0 - 27.0, mean 25.5
+
+attitude: 2.6 - 3.1, median 3.2
+
+deep: 3.3 - 4.1, median 3.7
+
+stra: 2.6 - 3.6, median 3.2
+
+surf: 2.4 - 3.2, median 2.8
+
+points: 19.0 - 27.8, median 23.0
+
+
+These state the same information as the graph functions.
+
+
+#### Statistically significant correlations
+Surf correlate negatively with attitude, deep, and stra. This means that when surf increases the other one decreases.
+When  gender is taken into account stra is not correlated for males nor females. Attitude and deep are correlated negatively with surf only for male gender.
+
+Points correlate positively with attitude meaning that points and attitude increase together.
+When gender is taken into account correlation is significant both for males and females.
+
+## Regression
+First, select three variables which correlate highest with the points to be used as explanatory variables. Those are: attitude, stra, and surf.
+
+### Multiple regression analysis
+Create a plot matrix and then a regression model having multiple explanatory variables.
+```{r}
+# create an plot matrix with ggpairs()
+ggpairs(students2014, lower = list(combo = wrap("facethist", bins = 20)))
+
+# create a regression model with multiple explanatory variables
+multiple_variables <- lm(points ~ attitude + stra + surf, data = students2014)
+
+# print out a summary of the model
+summary(multiple_variables)
+```
+Inspecting the results show that points correlate in statistically significant manner only with variable attitude.
+Let's remove the variables stra and surf from the model and use simple regression for variable attitude.
+Will do simple regression for attitude.
+
+### Simple regression
+```{r}
+# a scatter plot of points versus attitude
+qplot(attitude, points, data = students2014) + geom_smooth(method = "lm")
+
+# fit a linear model
+linear_attitude <- lm(points ~ attitude, data = students2014)
+
+# print out a summary of the model
+summary(linear_attitude)
+```
+Inspecting the results show that adjusted R-squared is 0.19 indicating that attitude can explain about 19 % of the change in points. 
+
+
+Now, to check the assumptions we'll produce diagnostics plots: Residuals vs Fitted values, Normal QQ-plot and Residuals vs Leverage.
+```{r}
+# draw diagnostic plots using the plot() function. Choose the plots 1, 2 and 5; Residuals vs Fitted values, Normal QQ-plot, and Residuals vs Leverage
+plot(linear_attitude, which = c(1,2,5))
+```
+
+#### Interpretation of the diagnostic plots
+
+**Residuals vs Fitted plot**
+
+The line stays close to 0 indicating that the model works nicely for points up to 24 and less well for the points in the higher end. 
+Observations 35, 56, and 145 are suggested as potential outliers.
+
+**Normal Q-Q plot**
+
+This probability plot indicates there is a linear connection and that the model fits nicely. For the low and high end the model fit is not. 
+Observations 35, 56, and 145 are marked as possible outliers. 
+
+**Residuals vs Leverage plot**
+
+The line stays quite close to 0, which indicates there are no major outliers in the data. 
+Observations 35, 56, and 71 are marked as potential outliers.
+
+
+Linear model is expected to have a good fit on the data. These diagnostic plots support the choice of linear model.
