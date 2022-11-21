@@ -1,0 +1,212 @@
+---
+title: "Exercise 3"
+author: "hannajulku"
+output: html_document
+---
+
+# 3: Logistic regression
+
+## Data set
+
+Read the data from csv file to R and check it looks fine.
+
+```{r}
+#access libraries to be needed
+library(boot)
+library(readr)
+library(tidyverse)
+library(dplyr)
+library(GGally)
+library(ggplot2)
+library(finalfit)
+
+# read the data into a data frame
+alc <- read.csv(file = "\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/alc.csv")
+# print variable names
+names(alc)
+
+```
+
+There are 370 observations and 35 variables in the data.
+Data set consists of survey data from students who have completed two different surveys, math and por. 
+Data includes information about alcohol consumption, school grades and other school related items like time spent studying, and gemographic variables like parental education.
+
+## Selecting variables for logistic regression
+
+I will study relationship between high/low alcohol consumption and other variables that are: absences, studytime, failures, and G3.
+
+### Hypothesis:
+
+High_use will correlate positively with absences (meaning that high alcohol usage is related with more absences)
+
+High_use will correlate negatively with famrel (meaning that high alcohol usage is related with worse family relationships) 
+
+High_use will correlate negatively with health (meaning that high alcohol usage is related to worse health status)
+
+High_use will correlate negatively with final grade (G3) (meaning that high alcohol usage is related with worse final grades)
+
+### Variable distributions
+
+```{r}
+
+# initialize a plot of high_use and absences
+gabs <- ggplot(alc, aes(x = high_use, y = absences))
+# define the plot as a box plot and draw it
+gabs + geom_boxplot(aes(col=sex)) + ggtitle("Student absences by alcohol consumption and sex")
+summary(alc$absences)
+
+# initialize a plot of high_use and quality of family relationships
+gfam <- ggplot(alc, aes(x = high_use, y = famrel))
+# define the plot as a box plot and draw it
+gfam + geom_boxplot(aes(col=sex)) + ggtitle("Family relationship quality by alcohol consumption and sex")
+summary(alc$famrel)
+
+# initialize a plot of high_use and health
+ghlth <- ggplot(alc, aes(x = high_use, y = health))
+# define the plot as a box plot and draw it
+ghlth + geom_boxplot(aes(col=sex)) + ggtitle("Health by alcohol consumption and sex")
+summary(alc$health)
+
+# initialize a plot of high_use and final grade (G3)
+gfg <- ggplot(alc, aes(x = high_use, y = G3))
+# define the plot as a box plot and draw it
+gfg + geom_boxplot(aes(col=sex)) + ylab("final grade") + ggtitle("Final grade by alcohol consumption and sex")
+summary(alc$G3)
+
+# tabulate data
+dependent <- "high_use"
+explanatory <- c("absences", "famrel", "health", "G3")
+alc %>% 
+  summary_factorlist(dependent, explanatory, p = TRUE,
+                     add_dependent_label = TRUE)
+```
+Absences seem to increase slightly according to box plot. According to tabulation there is a connection.
+This supports my hypothesis.
+
+According to both box plot and tabulation, high alcohol usage is connected with poorer family relationships.
+This is in line with my hypothesis.
+
+For health, for box plot and tabulation show there is no difference. 
+This did not support my hypothesis that health would decrease with high alcohol usage.
+
+Final grade seems to decrease a bit with high alcohol use according to both, box plot and tabulation.
+This is aligned with my hypothesis.
+
+### Binary logistic regressions
+
+I will start with a model including all four variables (even though it will be unneccary due to tabulation results). After that I will delete variables one by one, checking for AIC in between to see which model to choose and where to stop.
+
+```{r}
+
+# find the model with glm()
+m <- glm(high_use ~ absences + famrel + health + G3, data = alc, family = "binomial")
+
+# print out a summary of the model
+summary(m)
+# print out the coefficients of the model
+coef(m)
+# compute odds ratios (OR)
+OR <- coef(m) %>% exp()
+# compute confidence intervals (CI)
+CI <- confint(m)
+# print out the odds ratios with their confidence intervals
+cbind(OR, CI)
+
+```
+Let's remove health from the explaining variables.
+
+```{r}
+
+# find the model with glm()
+m2 <- glm(high_use ~ absences + famrel + G3, data = alc, family = "binomial")
+
+# print out a summary of the model
+summary(m2)
+# print out the coefficients of the model
+coef(m2)
+# compute odds ratios (OR)
+OR2 <- coef(m2) %>% exp()
+# compute confidence intervals (CI)
+CI2 <- confint(m2)
+# print out the odds ratios with their confidence intervals
+cbind(OR2, CI2)
+
+```
+AIC is slightly worse with this model, but as the explaining variables all become significant and it is better to have fewer explanatory variables, I will continue with this model. 
+
+Explanatory model confidence intervals do not cross 0, which also indicates they are statistically significant. 
+Just to be sure this model is the best fit, I will test a model without famrel.
+
+```{r}
+
+# find the model with glm()
+m3 <- glm(high_use ~ absences + G3, data = alc, family = "binomial")
+
+# print out a summary of the model
+summary(m3)
+# print out the coefficients of the model
+coef(m3)
+# compute odds ratios (OR)
+OR3 <- coef(m3) %>% exp()
+# compute confidence intervals (CI)
+CI3 <- confint(m3)
+# print out the odds ratios with their confidence intervals
+cbind(OR3, CI3)
+
+```
+
+AIC is higher for this than for the second model. 
+We will continue with the model having absences + famrel + G3 as explanatory variables.
+
+```{r}
+# tabulate data
+dependent <- "high_use"
+explanatory2 <- c("absences", "famrel", "G3")
+alc %>% 
+  summary_factorlist(dependent, explanatory2, p = TRUE,
+                     add_dependent_label = TRUE)
+```
+
+In this model, increase in school absences will add the likely hood for high alcohol use. 
+Increase in famrel, that is better family relationships, and in G3 (final grade) will decrease the likely hood for high alcohol use. 
+
+These results do support my hypothesis that school absences would be positively related to high alcohol use. In line with hypothesis famrel and G3 were negatively related with high alcohol use. 
+Experienced health was not related to alcohol usage, as I expected.
+
+### Model predictions
+
+Use the model 2 having absences, famrel, and G3 as predictors. 
+```{r}
+# predict() the probability of high_use
+probabilities <- predict(m2, type = "response")
+
+# add the predicted probabilities to 'alc'
+alc <- mutate(alc, probability = probabilities)
+# use the probabilities to make a prediction of high_use
+alc <- mutate(alc, prediction = high_use)
+# see the last ten original classes, predicted probabilities, and class predictions
+select(alc, failures, absences, sex, high_use, probability, prediction) %>% tail(10)
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction)
+
+# initialize a plot of 'high_use' versus 'probability' in 'alc'
+g <- ggplot(alc, aes(x = alc$probability, y = alc$high_use))
+# define the geom as points and draw the plot
+g + geom_point(aes(col = alc$prediction))
+# tabulate the target variable versus the predictions
+table(high_use = alc$high_use, prediction = alc$prediction) %>% prop.table() %>% addmargins()
+
+# define a loss function (mean prediction error)
+loss_func <- function(class, prob) {
+  n_wrong <- abs(class - prob) > 0.5
+  mean(n_wrong)
+}
+# call loss_func to compute the average number of wrong predictions in the (training) data
+loss_func(class = alc$probability, prob = 0)
+
+```
+It is visible in the plot that low alcohol use is more likely than high alcohol usage.
+Cross tabulations of predictions vs actual values show that 70 % of the observations are low alcohol usage and the rest 30 % high alcohol usage. Predictions and actual values have equal proportions.
+
+
+
