@@ -25,8 +25,7 @@ Data consists of 506 observations and 14 variables. Variables are mostly numeric
 
 Variables include such as crime rate, proportion of owner-occupied old buildings, location related to river, percentage of the lower status population etc.
  
-### Graphical overview on the data
-
+## Graphical overview on the data
 
 ```{r}
 #access needed libraries
@@ -34,17 +33,20 @@ library(ggplot2)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
+library(GGally)
 
-# plot variable matrices
-pairs(Boston)
+# create plot matrixes with ggpairs()
+p <- ggpairs(Boston[,1:5], lower = list(combo = wrap("facethist", bins = 20)))
+p2 <- ggpairs(Boston[,6:10], lower = list(combo = wrap("facethist", bins = 20)))
+# draw the plots
+p
+p2
 
 summary(Boston)
-
-
 ```
+Variable distributions differ greatly. In these plots showing half of the relationships, it seems that most of the variables are correlated with each other. 
 
-
-### Data set standardization
+## Data set standardization
 
 First, I will standardize the data set and view its summaries.
 ```{r}
@@ -54,31 +56,29 @@ boston_scaled <- scale(Boston)
 # summaries of the scaled variables
 summary(boston_scaled)
 ```
+After scaling mean for each variable is 0, in addition variances for different variables became more uniform.
 
-How did the variables change?
-
-
-
+Now, categorical crime variable will be created and categorical break points are created based on quantiles from crim variable stating per capita crime rate by town. Data set is divided to train and test sets, so that 80% of randomly selected observations belong to train set. 
 
 ```{r}
 # class of the boston_scaled object
 class(boston_scaled)
-
-# change the object to data frame
+# this is matrix array, so needs to be changes to to data frame for further analysis
 boston_scaled <- as.data.frame(boston_scaled)
 
-# create a quantile vector of crim and print it
+# create a quantile vector of crime and print it
 bins <- quantile(boston_scaled$crim)
 bins
 
-# create a categorical variable 'crime'
+# create a categorical variable 'crime' by using the bins just created as break points
 crime <- cut(boston_scaled$crim, breaks = bins, include.lowest = TRUE, label = c("low", "med_low", "med_high", "high"))
+
+# add the new categorical value to scaled data
+boston_scaled <- data.frame(boston_scaled, crime)
 
 # remove original crim from the dataset
 boston_scaled <- dplyr::select(boston_scaled, -crim)
 
-# add the new categorical value to scaled data
-boston_scaled <- data.frame(boston_scaled, crime)
 
 # Creating random selection of the data, so that 80 % will belong to training set, and the rest 20 % to test set
 # number of rows in the Boston data set 
@@ -93,15 +93,13 @@ train <- boston_scaled[ind,]
 # create test set 
 test <- boston_scaled[-ind,]
 
-# save the correct classes from test data
-correct_classes <- test$crime
-
-# remove the crime variable from test data
-test <- dplyr::select(test, -crime)
-
 ```
 
-### Linear discriminant analysis
+## Linear discriminant analysis
+
+We'll do linear discriminant analysis to test how closely all other variables are located to crime variable in this data set.
+The data set was divided into two sets, a train set to teach the model and to test set to test how the model works.
+First, we will create the model and plot the results.
 
 ```{r}
 # linear discriminant analysis
@@ -128,58 +126,100 @@ plot(lda.fit, dimen = 2, col = classes, pch = classes)
 lda.arrows(lda.fit, myscale = 2)
 ```
 
+Observations categorized as high seem to cluster together far apart from other variables, even though there are some med_high observations as part of that cluster. Low, med_low, and med_high clusters are partly overlapping, yet they can still be distinguished from each other.
+Accessibility to radial high ways (variable rad) seems to have the highest impact on crime category "high".
+
+Further, train model will be used to predict categories in test data.
 
 ```{r}
+# save the crime categories from test data
+correct_classes <- test$crime
+
+# remove the crime variable from test data
+test <- dplyr::select(test, -crime)
+
 # predict classes with test data
 lda.pred <- predict(lda.fit, newdata = test)
 
 # cross tabulate the results
 table(correct = correct_classes, predicted = lda.pred$class)
 ```
-Comment on the results.
+Predictions were most accurate for high category, where everything (23) went to the right category.
+For med_high about half of the predictions were correct (17), and most mis-categorized were in med_low.
+For med_low about 2/3 of the predictions were correct (14) and most mis-categorized predictions were in med_high.
+For low less than half of the predictions were correctly located to low category (12) and almost all other predictions were categorized as med_low.
+It seems that quite often low and med_high categories are predicted as med_low.
 
-7.
-Reload the Boston dataset and standardize the dataset (we did not do this in the Exercise Set, but you should scale the variables to get comparable distances). Calculate the distances between the observations. Run k-means algorithm on the dataset. Investigate what is the optimal number of clusters and run the algorithm again. Visualize the clusters (for example with the pairs() or ggpairs() functions, where the clusters are separated with colors) and interpret the results
-r
+All other variables together are not super good at predicting the crime variable.
+This is constant with the lda result from train data. Those above mentioned categories are overlapping and hence their prediction is difficult.
 
-Check from the materials, which distance matrix I should use.
+## K-means clustering 
+
+```{r}
+# reload the data
+data("Boston")
+# standardize data
+boston_rescaled <- scale(Boston)
+```
+
+Distances between observations are calculated by two different methods: euclidean distance matrix and manhattan distance matrix.
 
 ```{r}
 # euclidean distance matrix
-dist_eu <- dist(Boston)
+dist_eu <- dist(boston_rescaled)
 
 # look at the summary of the distances
 summary(dist_eu)
 
 # manhattan distance matrix
-dist_man <- dist(Boston, method = "manhattan")
+dist_man <- dist(boston_rescaled, method = "manhattan")
 
 # look at the summary of the distances
 summary(dist_man)
 ```
-
-Here, I will investigate what is the optimal number of clusters.
 ```{r}
+# k-means clustering
+km <- kmeans(boston_rescaled, centers = 3)
 
+# plot the Boston dataset with clusters
+pairs(boston_rescaled[,1:5], col = km$cluster)
+pairs(boston_rescaled[,6:10], col = km$cluster)
 ```
 
-Investigation shows that X is the optimal number for clusters. Let's use that and visualize the clusters.
+Here, I will investigate what is the optimal number of clusters.
+
+```{r}
+set.seed(123)
+
+# determine the number of clusters
+k_max <- 8
+
+# calculate the total within sum of squares
+twcss <- sapply(1:k_max, function(k){kmeans(boston_rescaled, k)$tot.withinss}) 
+
+# visualize the results
+qplot(x = 1:k_max, y = twcss, geom = 'line') 
+```
+
+Investigation shows that 2 is the optimal number for clusters, as there is an edgy turn on the graph. Let's use that and visualize the clusters.
 
 ```{r}
 # k-means clustering
-km <- kmeans(Boston, centers = 3)
+km2 <- kmeans(boston_rescaled, centers = 2)
 
 # plot the Boston dataset with clusters
-pairs(Boston, col = km$cluster)
+pairs(boston_rescaled[,1:5], col = km2$cluster)
+pairs(boston_rescaled[,6:10], col = km2$cluster)
 ```
-Interpret the results
+
+For some of the variables cluster colors do seems to fit the clusters nicely. For others, clusters are intermixed with each other and hence not so good at separating observations. When this version is compared with the three cluster version, this seems more tidy.
 
 
+## 3D plots for train data
 
-8. Bonus: Perform k-means on the original Boston data with some reasonable number of clusters (> 2). Remember to standardize the dataset. Then perform LDA using the clusters as target classes. Include all the variables in the Boston data in the LDA model. Visualize the results with a biplot (include arrows representing the relationships of the original variables to the LDA solution). Interpret the results. Which variables are the most influential linear separators for the clusters? (0-2 points to compensate any loss of points from the above exercises)
+Here, I will plot the train data in 3D. I will plot the data twice, first by using crime categories as coloring and the using k-means clusters for coloring using the same number of clusters to see the effect of coloring strategy on the plot.
 
-9. Super-Bonus: Run the code below for the (scaled) train data that you used to fit the LDA. The code creates a matrix product, which is a projection of the data points.
-
+```{r}
 model_predictors <- dplyr::select(train, -crime)
 # check the dimensions
 dim(model_predictors)
@@ -187,7 +227,15 @@ dim(lda.fit$scaling)
 # matrix multiplication
 matrix_product <- as.matrix(model_predictors) %*% lda.fit$scaling
 matrix_product <- as.data.frame(matrix_product)
-Next, install and access the plotly package. Create a 3D plot (cool!) of the columns of the matrix product using the code below.
+# Access the plotly package. Create a 3D plot of the columns of the matrix product using the crime classes in train data.
+library(plotly)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = classes)
+# Draw similar plot, but use k-means for setting colors.
+# remove the crime variable from train data to run k-means
+# use centers = 4 to compare the effect of k-means vs quantile in setting colors
+trainkm <- dplyr::select(train, -crime)
+kmtrain <- kmeans(trainkm, centers = 4)
+plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers', color = kmtrain$cluster)
+```
 
-plot_ly(x = matrix_product$LD1, y = matrix_product$LD2, z = matrix_product$LD3, type= 'scatter3d', mode='markers')
-Adjust the code: add argument color as a argument in the plot_ly() function. Set the color to be the crime classes of the train set. Draw another 3D plot where the color is defined by the clusters of the k-means. How do the plots differ? Are there any similarities? (0-3 points to compensate any loss of points from the above exercises)
+Observations are located similarly in both plots. There is some difference in the coloring of the clusters. Here, I used same number of clusters for both to compare the effect of different clustering method. To summarize, observations are the same in both plots, yet coloring of them is different as quantile is set by the probability of those observations in belonging to particular fraction. K-mean on the other hand tries to minimize the mean distance between geometric points, that is, it is more sensitive for the composition of the data.
