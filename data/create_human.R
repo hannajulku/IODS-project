@@ -89,3 +89,100 @@ glimpse(human)
   setwd("\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project")
 # write cleaneddata into a csv file
 write.csv(human, file = '\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/human.csv', row.names = FALSE)
+
+
+# Here starts the second part of data wrangling for this data set
+#load libraries to be used
+library(tidyverse)
+library(tidyr)
+
+# read the human data
+human <- read.table("\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/human.csv", 
+                    sep =",", header = T)
+
+# look at the (column) names of human
+names(human)
+# look at the structure of human
+str(human)
+# look at the dimensions
+dim(human)
+# print out summaries of the variables
+summary(human)
+
+# This data has 195 observations and 19 variables. 
+ # The data is from project defining human developmental index, that takes into account different societal aspect
+    # The data combines several indicators from most countries in the world
+    # "Country" = Country name
+      # Health and knowledge
+          #"GNI" = Gross National Income per capita
+          #"Life.Exp"= Life expectancy at birth
+          #"Edu.Exp" = Expected years of schooling 
+          #"Mat.Mor" = Maternal mortality ratio
+          #"Ado.Birth" = Adolescent birth rate
+      # Empowerment
+          #"Parli.F" = Percetange of female representatives in parliament
+          #"Edu2.F" = Proportion of females with at least secondary education
+          #"Edu2.M" = Proportion of males with at least secondary education
+          #"Labo.F" = Proportion of females in the labour force
+          #"Labo.M" " Proportion of males in the labour force
+          #"Edu2.FM" = Edu2.F / Edu2.M
+          #"Labo.FM" = Labo2.F / Labo2.M
+
+#last time I had accidently missed renaming "Percent.Representation.in.Partiament" as "Parli.F".
+#Will do that now before continuing with mutating data
+human <- rename(human, "Parli.F" = "Percent.Representation.in.Parliament")
+
+# change GNI to numeric
+human$GNI <- as.numeric(human$GNI)
+glimpse(human)
+# seems that as.numeric worked, and also renaming variable to Parli.F
+
+# keep only variables "Country", "Edu2.FM", "Labo.FM", "Edu.Exp", "Life.Exp", "GNI", "Mat.Mor", "Ado.Birth", "Parli.F"
+# columns to keep
+keep <- c("Country", "Edu2.FM", "Labo.FM", "Life.Exp", "Edu.Exp", "GNI", "Mat.Mor", "Ado.Birth", "Parli.F")
+# select the 'keep' columns
+human <- select(human, one_of(keep))
+
+# remove rows with missing values
+# print out a completeness indicator of the 'human' data
+complete.cases(human)
+
+# print out the data along with a completeness indicator as the last column
+data.frame(human[-1], comp = complete.cases(human))
+
+# filter out all rows with NA values
+human <- filter(human, complete.cases(human) ,TRUE) 
+
+# check what is in the country varible
+print(human$Country)
+# last 7 observation are related to region instead of country
+#remove these 7 last observations
+# define the last indice we want to keep
+last <- nrow(human) - 7
+
+# choose everything until the last 7 observations
+human <- human[1:last, ]
+
+# define row names as countries
+rownames(human) <- human$Country
+
+# check the index for variable country
+str(human)
+# remove country column
+human <- human[, -1]
+# check that removed variable was country
+str(human)
+#there are 155 observations and 8 variables, as supposed to be
+#check that row names are included
+human
+# yup, data looks as it should, Row names are countries and other included variables are
+# Edu2.FM, Labo.FM, Life.Exp, Edu.Exp, GNI Mat.Mor, Ado.Birth, and Parli.F
+
+#Save the data as human.csv in data folder.
+# set working directory
+setwd("\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project")
+# write human into a csv file, old one will be overwritten
+write.csv(human, file = '\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/human.csv', row.names = TRUE)
+
+
+

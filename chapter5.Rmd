@@ -1,0 +1,100 @@
+---
+title: "Exercise 5"
+author: "Hanna Julku"
+output: html_document
+---
+
+# 5: Dimentionality reduction techniques
+
+## Human data set
+
+```{r}
+# read the data into a data frame
+human <- read.csv(file = "\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/alc.csv") %>% as.data.frame()
+
+#visualize data and show summary
+corrplot(human)
+pairs(human)
+summary(human)
+```
+
+Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them.
+
+## Principal component analysis (PCA)
+
+```{r}
+# perform principal component analysis (with the SVD method)
+pca_human <- prcomp(human)
+
+# Show the variability captured by the principal components.
+HOX, tee tämä!
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+#Draw a biplot displaying the observations by the first two principal components (PC1 coordinate in x-axis, PC2 coordinate in y-axis), along with arrows representing the original variables.
+# also, include captions in plots to describe the results by stating the related phenomena 
+HOX, tee tämä!
+```
+
+Data was not standardized, so let's standardize it and redo stuff done above.
+
+```{r}
+# standardize data
+human_std <- scale(human) 
+
+# perform principal component analysis (with the SVD method)
+pca_human_std <- prcomp(human_std)
+
+# Show the variability captured by the principal components.
+HOX, tee tämä!
+
+# draw a biplot of the principal component representation and the original variables
+biplot(pca_human_std, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
+
+#Draw a biplot displaying the observations by the first two principal components (PC1 coordinate in x-axis, PC2 coordinate in y-axis), along with arrows representing the original variables.
+# also, include captions in plots to describe the results by stating the related phenomena 
+HOX, tee tämä!
+```
+
+Interpret the results of both analysis (with and without standardizing). Are the results different? Why or why not? Include captions (brief descriptions) in your plots where you describe the results by using not just your variable names, but the actual phenomena they relate to.
+
+Give your personal interpretations of the first two principal component dimensions based on the biplot drawn after PCA on the standardized human data. (0-2 points)
+
+## Tea data set
+
+```{r}
+# load tea data set
+tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+
+#explore the data
+str(tea)
+dim(tea)
+view(tea)
+
+#visualize  data
+library(ggplot2)
+pivot_longer(tea_time, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+```
+
+Comment briefly
+
+## Multiple correspondence analysis (MCA)
+
+```{r}
+# multiple correspondence analysis
+library(FactoMineR)
+mca <- MCA(tea_time, graph = FALSE)
+
+# summary of the model
+summary(mca)
+
+# draw variable biplot
+biplot(mca)
+
+# visualize MCA
+plot(mca, invisible=c("ind"), graph.type = "classic", habillage = "quali")
+```
+
+Use Multiple Correspondence Analysis (MCA) on the tea data (or on just certain columns of the data, it is up to you!). Interpret the results of the MCA and draw at least the variable biplot of the analysis. You can also explore other plotting options for MCA. Comment on the output of the plots. (0-4 points)
