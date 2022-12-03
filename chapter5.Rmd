@@ -9,16 +9,25 @@ output: html_document
 ## Human data set
 
 ```{r}
+# load libraries to be used
+library(tidyverse)
+library(corrplot)
+library(GGally)
+library(ggplot2)
+
 # read the data into a data frame
-human <- read.csv(file = "\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/alc.csv") %>% as.data.frame()
+human <- read.csv(file = "\\\\ad.helsinki.fi/home/h/hkonstar/Desktop/IDOS/IODS-project/data/human.csv", row.names = 1) %>% as.data.frame()
 
 #visualize data and show summary
-corrplot(human)
-pairs(human)
+ggpairs(human)
 summary(human)
+str(human)
+cor(human) %>% corrplot(, type = "upper")
 ```
 
-Describe and interpret the outputs, commenting on the distributions of the variables and the relationships between them.
+There are 8 variables and 155 observations in the data set. 
+Variable distributions vary a lot. Some follow normal distribution, others do not. 
+Life.Exp and Edu.Exp as well as Mat.Mor and Ado.Birth have the highest positive correlation. Life.Exp and Mat.Mor on the hand have highest negative correlation. Just mentioned two "clusters" (Life.Exp + Edu.Exp and Mat.Mor + Ado.Birth) correlate negatively with each other. 
 
 ## Principal component analysis (PCA)
 
@@ -27,17 +36,13 @@ Describe and interpret the outputs, commenting on the distributions of the varia
 pca_human <- prcomp(human)
 
 # Show the variability captured by the principal components.
-HOX, tee tämä!
+summary(pca_human)
 
 # draw a biplot of the principal component representation and the original variables
 biplot(pca_human, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-
-#Draw a biplot displaying the observations by the first two principal components (PC1 coordinate in x-axis, PC2 coordinate in y-axis), along with arrows representing the original variables.
-# also, include captions in plots to describe the results by stating the related phenomena 
-HOX, tee tämä!
 ```
 
-Data was not standardized, so let's standardize it and redo stuff done above.
+Data was not standardized, so let's standardize it and redo what was just done.
 
 ```{r}
 # standardize data
@@ -47,54 +52,78 @@ human_std <- scale(human)
 pca_human_std <- prcomp(human_std)
 
 # Show the variability captured by the principal components.
-HOX, tee tämä!
+summary(pca_human_std)
 
 # draw a biplot of the principal component representation and the original variables
 biplot(pca_human_std, choices = 1:2, cex = c(0.8, 1), col = c("grey40", "deeppink2"))
-
-#Draw a biplot displaying the observations by the first two principal components (PC1 coordinate in x-axis, PC2 coordinate in y-axis), along with arrows representing the original variables.
-# also, include captions in plots to describe the results by stating the related phenomena 
-HOX, tee tämä!
 ```
 
-Interpret the results of both analysis (with and without standardizing). Are the results different? Why or why not? Include captions (brief descriptions) in your plots where you describe the results by using not just your variable names, but the actual phenomena they relate to.
+Standardization makes it possible to compare variables with each other. 
+Standardized results resemble visualized data, whereas non-standardized results were quite different. For instance, non-standardized biplot shows GNI as the most impactfull variable, where as for the standardized data results resemble correlations for original data. Standardized results give more defined results.
 
-Give your personal interpretations of the first two principal component dimensions based on the biplot drawn after PCA on the standardized human data. (0-2 points)
+Life expectancy, female/male proportion having secondary education, expected year of education, and Gross national income appear together and they have an opposite effect than maternal mortality and number of children being born. These relate to PC1 that explains the most of the variance in the data that is about 54% in this case. 
+Female/male proportion on participating in labour and women representation in parliament have similar effect. These explain about 16% of the variance in the data, and they are mostly related to PC2. 
 
 ## Tea data set
 
 ```{r}
 # load tea data set
-tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE)
+tea <- read.csv("https://raw.githubusercontent.com/KimmoVehkalahti/Helsinki-Open-Data-Science/master/datasets/tea.csv", stringsAsFactors = TRUE) %>% as.data.frame()
 
 #explore the data
 str(tea)
 dim(tea)
 view(tea)
 
+#rselect subsets to be drawn
+tea1 <- tea[,1:9] %>% as.data.frame()
+tea2 <- tea[,10:18] %>% as.data.frame()
+tea3 <- tea[,20:29] %>% as.data.frame()
+tea4 <- tea[,30:36] %>% as.data.frame()
+
 #visualize  data
-library(ggplot2)
-pivot_longer(tea_time, cols = everything()) %>% 
-  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() + theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+pivot_longer(tea1, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() +  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+pivot_longer(tea2, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() +  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+pivot_longer(tea3, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() +  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+
+pivot_longer(tea4, cols = everything()) %>% 
+  ggplot(aes(value)) + facet_wrap("name", scales = "free") + geom_bar() +  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
 ```
 
-Comment briefly
+Data consists of 300 observations and 36 variables. Questionnaire data about how people drink their tea (18 items), how they perceive the product (12 items), and personal details (4 items).
 
 ## Multiple correspondence analysis (MCA)
 
+I chose variables Tea, How, sugar, age_Q, and sex.
+
 ```{r}
-# multiple correspondence analysis
 library(FactoMineR)
+library(tidyr)
+
+# column names to keep in the dataset
+keep_columns <- c("Tea", "How", "sugar", "age_Q", "sex")
+
+# select the 'keep_columns' to create a new dataset
+tea_time <- select(tea, keep_columns)
+
+# multiple correspondence analysis
 mca <- MCA(tea_time, graph = FALSE)
 
 # summary of the model
 summary(mca)
 
-# draw variable biplot
-biplot(mca)
-
 # visualize MCA
 plot(mca, invisible=c("ind"), graph.type = "classic", habillage = "quali")
 ```
 
-Use Multiple Correspondence Analysis (MCA) on the tea data (or on just certain columns of the data, it is up to you!). Interpret the results of the MCA and draw at least the variable biplot of the analysis. You can also explore other plotting options for MCA. Comment on the output of the plots. (0-4 points)
+People using milk or other things with their tea, favoring green or black tea and being 35-44 or +60 year old have positive effect on both dimension 1 and 2. 
+Choose Earl Grey, not adding anything to tea, and being 15-24 years-old have negative effect on dimensions 1 and 2. 
+
+For dim1 gender does not have an effect, but for dim2 there seems to be an opposite effect for gender. 
+
+Among these selected variables there does not seem to be any clusters that could clearly explain the variability in the data.
