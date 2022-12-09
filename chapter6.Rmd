@@ -1,0 +1,9 @@
+---
+title: "Assignment 6"
+author: "Hanna Julku"
+output: html_document
+---
+
+# 6: Analysis of longitudinal data
+
+## Data set
